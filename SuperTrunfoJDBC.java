@@ -4,19 +4,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
-/**
- * Sistema Super Trunfo usando JDBC puro
- * Nível 1 - Novato: Desafio de Código - "Cartas Clássicas - JDBC Puro"
- * 
- * Funcionalidades:
- * - Gerenciamento de cartas (alunos) com CRUD completo
- * - Sistema de batalhas entre cartas
- * - Interface de console interativa
- * - Persistência com Apache Derby
- */
 public class SuperTrunfoJDBC {
     
-    // Configurações de conexão com o banco Derby
     private static final String URL = "jdbc:derby:escola;create=true";
     private static final String USUARIO = "";
     private static final String SENHA = "";
@@ -24,33 +13,28 @@ public class SuperTrunfoJDBC {
     private static Scanner scanner = new Scanner(System.in);
     private static Random random = new Random();
     
-    /**
-     * Obtém uma conexão com o banco de dados Derby
-     */
     private static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(URL, USUARIO, SENHA);
     }
     
-    /**
-     * Cria a tabela aluno se ela não existir
-     */
     public static void criarTabela() {
-        String sql = .
+        String sql = "CREATE TABLE aluno (matricula VARCHAR(10) PRIMARY KEY, nome VARCHAR(50), entrada INT)";
         
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
             
-            .
+            stmt.executeUpdate(sql);
+            System.out.println("✅ Tabela criada com sucesso!");
             
         } catch (SQLException e) {
-            // Se a tabela já existir, apenas informa
-            if (e.getSQLState().equals("X0Y32")) .
+            if (e.getSQLState().equals("X0Y32")) {
+                System.out.println("⚠️ Tabela já existe.");
+            } else {
+                System.err.println("❌ Erro ao criar tabela: " + e.getMessage());
+            }
         }
     }
     
-    /**
-     * Insere um aluno (carta) na base de dados usando PreparedStatement
-     */
     public static boolean inserirAluno(Aluno aluno) {
         String sql = "INSERT INTO aluno (matricula, nome, entrada) VALUES (?, ?, ?)";
         
@@ -58,7 +42,8 @@ public class SuperTrunfoJDBC {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setString(1, aluno.getMatricula());
-            .
+            ps.setString(2, aluno.getNome());
+            ps.setInt(3, aluno.getEntrada());
             
             int linhasAfetadas = ps.executeUpdate();
             
@@ -74,19 +59,19 @@ public class SuperTrunfoJDBC {
         return false;
     }
     
-    /**
-     * Consulta todos os alunos usando Statement e ResultSet
-     */
     public static List<Aluno> consultarTodosAlunos() {
         List<Aluno> alunos = new ArrayList<>();
         String sql = "SELECT * FROM aluno ORDER BY nome";
         
         try (Connection conn = getConnection();
-             . {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             
             while (rs.next()) {
                 Aluno aluno = new Aluno();
-                .
+                aluno.setMatricula(rs.getString("matricula"));
+                aluno.setNome(rs.getString("nome"));
+                aluno.setEntrada(rs.getInt("entrada"));
                 
                 alunos.add(aluno);
             }
@@ -98,9 +83,6 @@ public class SuperTrunfoJDBC {
         return alunos;
     }
     
-    /**
-     * Exclui um aluno usando PreparedStatement
-     */
     public static boolean excluirAluno(String matricula) {
         String sql = "DELETE FROM aluno WHERE matricula = ?";
         
@@ -108,12 +90,13 @@ public class SuperTrunfoJDBC {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setString(1, matricula);
-            .
+            int linhasAfetadas = ps.executeUpdate();
             
             if (linhasAfetadas > 0) {
-                .
+                System.out.println("✅ Carta removida com sucesso!");
+                return true;
             } else {
-                System.out.println("⚠️  Nenhuma carta encontrada com essa matrícula.");
+                System.out.println("⚠️ Nenhuma carta encontrada com essa matrícula.");
                 return false;
             }
             
@@ -122,10 +105,8 @@ public class SuperTrunfoJDBC {
             return false;
         }
     }
-    
-    /**
-     * Busca um aluno específico por matrícula
-     */
+
+    // Busca um aluno por matrícula
     public static Aluno buscarAluno(String matricula) {
         String sql = "SELECT * FROM aluno WHERE matricula = ?";
         
@@ -137,7 +118,10 @@ public class SuperTrunfoJDBC {
             
             if (rs.next()) {
                 Aluno aluno = new Aluno();
-                .
+                aluno.setMatricula(rs.getString("matricula"));
+                aluno.setNome(rs.getString("nome"));
+                aluno.setEntrada(rs.getInt("entrada"));
+                return aluno;
             }
             
         } catch (SQLException e) {
@@ -146,10 +130,8 @@ public class SuperTrunfoJDBC {
         
         return null;
     }
-    
-    /**
-     * Exibe todas as cartas formatadas
-     */
+
+    // Exibe todas as cartas atualmente cadastradas
     public static void exibirTodasCartas() {
         List<Aluno> alunos = consultarTodosAlunos();
         
@@ -166,16 +148,17 @@ public class SuperTrunfoJDBC {
             System.out.println();
         }
     }
-    
-    /**
-     * Insere dados de exemplo no sistema
-     */
+
+    // Insere dados de exemplo no sistema
     public static void inserirDadosExemplo() {
         System.out.println("\n🎲 Inserindo cartas de exemplo...");
         
         Aluno[] exemplos = {
-            new Aluno("A2020001", "Ana Silva", 2020),
-            .
+            new Aluno("A2020001", "Ana Barbosa ", 2020),
+            new Aluno("B2021001", "Bruno Costa", 2021),
+            new Aluno("C2022001", "Carla Dias", 2022),
+            new Aluno("N2023001", "Daniel Espíndola", 2023),
+            new Aluno("O2024001", "Eduardo Fonseca", 2024)
         };
         
         int inseridos = 0;
@@ -188,48 +171,49 @@ public class SuperTrunfoJDBC {
         System.out.printf("✅ %d cartas inseridas com sucesso!%n", inseridos);
     }
     
-    /**
-     * Implementa a lógica de batalha entre duas cartas
-     */
     public static void batalharCartas() {
         List<Aluno> alunos = consultarTodosAlunos();
         
         if (alunos.size() < 2) {
-            System.out.println("⚠️  É necessário ter pelo menos 2 cartas para batalhar!");
+            System.out.println("⚠️ É necessário ter pelo menos 2 cartas para batalhar!");
             return;
         }
         
         System.out.println("\n⚔️  === BATALHA SUPER TRUNFO ===");
         
-        // Sorteia duas cartas aleatórias
         Aluno carta1 = alunos.get(random.nextInt(alunos.size()));
         Aluno carta2;
         do {
             carta2 = alunos.get(random.nextInt(alunos.size()));
         } while (carta1.getMatricula().equals(carta2.getMatricula()));
         
-        .
+        System.out.println(" CARTA 1:");
+        carta1.exibirCarta();
+        System.out.println("\nCARTA 2:");
+        carta2.exibirCarta();
+        System.out.println();
         
         if (carta1.batalhar(carta2)) {
-            .
+            System.out.println("🏆 VENCEDOR: " + carta1.getNome() + " (Ano mais recente: " + carta1.getEntrada() + ")");
         } else if (carta2.batalhar(carta1)) {
-            .
+            System.out.println("🏆 VENCEDOR: " + carta2.getNome() + " (Ano mais recente: " + carta2.getEntrada() + ")");
         } else {
-            .
+            System.out.println("🤝 EMPATE! Ambas cartas têm o mesmo ano de entrada: " + carta1.getEntrada());
         }
     }
     
-    /**
-     * Menu interativo do sistema
-     */
     public static void exibirMenu() {
         System.out.println("\n🃏 === SUPER TRUNFO - MENU PRINCIPAL ===");
-        .
+        System.out.println("1 - Exibir todas as cartas");
+        System.out.println("2 - Inserir nova carta");
+        System.out.println("3 - Buscar carta por matrícula");
+        System.out.println("4 - Remover carta");
+        System.out.println("5 - Batalhar cartas");
+        System.out.println("6 - Inserir dados de exemplo");
+        System.out.println("7 - Sair");
+        System.out.print("Escolha uma opção: ");
     }
     
-    /**
-     * Processa a opção escolhida pelo usuário
-     */
     public static void processarOpcao(int opcao) {
         switch (opcao) {
             case 1:
@@ -238,7 +222,12 @@ public class SuperTrunfoJDBC {
                 
             case 2:
                 System.out.println("\n➕ === INSERIR NOVA CARTA ===");
-                .
+                System.out.print("Digite a matrícula: ");
+                String matricula = scanner.nextLine();
+                System.out.print("Digite o nome: ");
+                String nome = scanner.nextLine();
+                System.out.print("Digite o ano de entrada: ");
+                int entrada = Integer.parseInt(scanner.nextLine());
                 
                 Aluno novoAluno = new Aluno(matricula, nome, entrada);
                 inserirAluno(novoAluno);
@@ -274,23 +263,19 @@ public class SuperTrunfoJDBC {
                 break;
                 
             case 0:
-                .
+                System.out.println("\nEncerrando o programa.");
+                break;
                 
             default:
                 System.out.println("❌ Opção inválida! Tente novamente.");
         }
     }
     
-    /**
-     * Método principal que executa o programa
-     */
     public static void main(String[] args) {
         System.out.println("🃏 ===================================");
         System.out.println("   SUPER TRUNFO - CARTAS CLÁSSICAS");
-        System.out.println("   Módulo 1 - Novato (JDBC Puro)");
         System.out.println("🃏 ===================================");
         
-        // Inicializar banco de dados
         criarTabela();
         
         int opcao;
@@ -300,11 +285,13 @@ public class SuperTrunfoJDBC {
                 opcao = Integer.parseInt(scanner.nextLine());
                 processarOpcao(opcao);
             } catch (NumberFormatException e) {
-                .
+                System.out.println("❌ Por favor, digite um número válido!");
+                opcao = -1;
             }
             
             if (opcao != 0) {
-                .
+                System.out.print("\nPressione ENTER para continuar...");
+                scanner.nextLine();
             }
             
         } while (opcao != 0);
@@ -312,4 +299,3 @@ public class SuperTrunfoJDBC {
         scanner.close();
     }
 }
-
